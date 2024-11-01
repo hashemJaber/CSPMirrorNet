@@ -118,10 +118,6 @@ class BaseConvBlockCSP(nn.Module):
     x1_part1 = nn.functional.adaptive_avg_pool2d(x1_part1, (x3_part2.size(2), x3_part2.size(3)))
 
 
-    
-    
-
-
     return (x3_part1, torch.cat([x1_part1,x3_part2],1))
 
 
@@ -152,12 +148,52 @@ class CSPDarkNet(nn.Module):
 
    def forward(self, feature_map:Tensor)->Tensor: #also can be an image/Feaute map
       print('before : example size',feature_map.shape )
+
+      height_split = feature_map.shape[2] // 2
+      width_split = feature_map.shape[3] // 2
+      overlap_percentage=0.20
+
+
+      height_overlap = int(height_split * overlap_percentage)
+      width_overlap = int(width_split * overlap_percentage)
+
+      # Using a percentage value for might make the model more flexible by allowing us to scale the overlap relative to the size of the feature map., This is just an idea, not referenced anywhere
+      example1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
+      example2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
       
-      example1,example2 = torch.split(feature_map, 2,)
-      example1 = np.array(example1)
+        # Process
+      print("after: ",example1.shape)
+      print("after: ",example2.shape)
 
-      print('example size',example1.shape )
+      
+      processed_example1 = self.base_block(example1)[1]
+      processed_example2 = self.base_block(example2)[1]
+      print("processed_example1", processed_example1.shape)
 
+      # Resuing the same logic we did earlier, we are mimicking a CSPNet Part1, Part2 except cross sectioned
+      
+      example2 = nn.functional.adaptive_avg_pool2d(example2, (processed_example1.size(2), processed_example1.size(3)))
+      example1 = nn.functional.adaptive_avg_pool2d(example1, (processed_example1.size(2), processed_example1.size(3)))
+
+      concat1 = torch.cat([example2, processed_example1], dim=1)  
+      
+      concat2 = torch.cat([example1, processed_example2], dim=1)  
+
+      # Sum the concatenated outputs
+      combined_output = concat1 + concat2
+
+      print("Shape of example1 (untouched):", example1.shape)
+      print("Shape of example2 (untouched):", example2.shape)
+      print("Shape of processed_example1:", processed_example1.shape)
+      print("Shape of processed_example2:", processed_example2.shape)
+      print("Shape of concat1:", concat1.shape)
+      print("Shape of concat2:", concat2.shape)
+      print("Combined output shape after summing:", combined_output.shape)
+
+      
+      
+
+  
       
       return example1
 
@@ -171,7 +207,8 @@ class FPN(nn.Module):
   """
   def __init__(self):
     super(FPN,self).__init__()
-  def forward(self)->Tensor:
+  def forward(self,feature_map:Tensor)->Tensor:
+
 
     return None
 
@@ -203,4 +240,7 @@ class RPN(nn.Module):
     super(RPN,self).__init__()
   def forward()->None:
     return None
+
+
+
 
