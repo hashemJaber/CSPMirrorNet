@@ -123,15 +123,16 @@ class BaseConvBlockCSP(nn.Module):
 
 
 
+
 class CSPDarkNet(nn.Module):
    """
    CSPDarkNet:
-    unlike the original CSPNet, where we would only take 1 part to pass through convolutions while 
-    skipping the untoched part to join the output of those convultions, we will be doing the same 
+    unlike the original CSPNet, where we would only take 1 part to pass through convolutions while
+    skipping the untoched part to join the output of those convultions, we will be doing the same
     in this architecture with the adddition that we will be joining both both parts in the same
     operation, same model, two different outputs, and concatinate the 2 branches outputs. Hoping to increase the richness of the feature represenation.
 
-    input: 
+    input:
         image: Tensor
 
     outout:
@@ -160,24 +161,24 @@ class CSPDarkNet(nn.Module):
       # Using a percentage value for might make the model more flexible by allowing us to scale the overlap relative to the size of the feature map., This is just an idea, not referenced anywhere
       example1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
       example2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
-      
+
         # Process
       print("after: ",example1.shape)
       print("after: ",example2.shape)
 
-      
+
       processed_example1 = self.base_block(example1)[1]
       processed_example2 = self.base_block(example2)[1]
       print("processed_example1", processed_example1.shape)
 
       # Resuing the same logic we did earlier, we are mimicking a CSPNet Part1, Part2 except cross sectioned
-      
+
       example2 = nn.functional.adaptive_avg_pool2d(example2, (processed_example1.size(2), processed_example1.size(3)))
       example1 = nn.functional.adaptive_avg_pool2d(example1, (processed_example1.size(2), processed_example1.size(3)))
 
-      concat1 = torch.cat([example2, processed_example1], dim=1)  
-      
-      concat2 = torch.cat([example1, processed_example2], dim=1)  
+      concat1 = torch.cat([example2, processed_example1], dim=1)
+
+      concat2 = torch.cat([example1, processed_example2], dim=1)
 
       # Sum the concatenated outputs
       combined_output = concat1 + concat2
@@ -190,27 +191,40 @@ class CSPDarkNet(nn.Module):
       print("Shape of concat2:", concat2.shape)
       print("Combined output shape after summing:", combined_output.shape)
 
-      
-      
 
-  
-      
-      return example1
+      return combined_output
 
 
 
 class FPN(nn.Module):
-  """
-  Feature Pyramid Network
-  
+    """
+    Feature Pyramid Network:
+    input:
+        Feature map: output from the backbone
 
-  """
-  def __init__(self):
-    super(FPN,self).__init__()
-  def forward(self,feature_map:Tensor)->Tensor:
+    output:
+          P1,P2,P3 (each P is a payramid)
+    """
+    def __init__(self, in_channels: list, out_channels: int):
+        super(FPN, self).__init__()
 
 
-    return None
+        self.conv1 = nn.Conv2d(in_channels[0], out_channels, kernel_size=1, stride=1)
+        self.conv2 = nn.Conv2d(in_channels[1], out_channels, kernel_size=1, stride=1)
+        self.conv3 = nn.Conv2d(in_channels[2], out_channels, kernel_size=1, stride=1)
+
+        self.upconv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1) #maybe
+        self.upconv1 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1) #maybe
+
+    def forward(self, feature_map: list) -> tuple:
+        
+        C2, C3, C4 = feature_map 
+
+        P3 = self.conv3(C4)
+        P2 = self.conv2(C3) + F.interpolate(P3, scale_factor=2, mode='nearest')
+        P1 = self.conv1(C2) + F.interpolate(P2, scale_factor=2, mode='nearest')
+
+        return P1, P2, P3
 
 
 class PAN(nn.Module):
@@ -220,6 +234,7 @@ class PAN(nn.Module):
   """
   def __init__(self):
     super(PAN,self).__init__()
+    self.conv1= nn.Conv2d(out_put_channel,out_put_channel,kernel_size=kernel_size,stride=1 )
   def forward()->Tensor:
     return None
 
@@ -229,7 +244,7 @@ class APANFPN():
   def _init__(self):
     super(APANFPN,self).__init__()
   def forward(self)->None:
-    return None  
+    return None
 
 
 class RPN(nn.Module):
@@ -240,7 +255,3 @@ class RPN(nn.Module):
     super(RPN,self).__init__()
   def forward()->None:
     return None
-
-
-
-
