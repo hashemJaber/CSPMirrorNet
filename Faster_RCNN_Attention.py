@@ -5,7 +5,14 @@ from torch import Tensor
 import torchvision.transforms as transforms
 import numpy as np
 
-
+"""
+### Proposal 1: 
+We propose that using avg poolings, permutes, as well as channel manupilation and then summations/concatinations can increase feature size representations while not adding computational expensiveness. This in mind said that the closer we are to the origin of the gradients, the less information we loose due to averaging decay, unless a matching/close dimention shape is added in the inermediate layers, such that the model architectuctres mimicks that of the U-Net Network.
+### Proposal 2:
+We propose that horizentally increasing the feature map dimentions will help and assist in increasing gradient representation via using a siamese network for both parts of CSPNet, which will require less computations while also increasing feature representations. 
+### Proposal 3:
+We Propose that cross section percentage feature map sharing for the CSPNet which will help and asssit in feauter represeantion in maintaining some edge information.
+"""
 
 #NOTE TO SELF: USE SPARSE CONVOLUITONS IN EARLIER LAYERS ?????
 class InputLayer(nn.Module):
