@@ -1,4 +1,5 @@
-### Faster R-CNN with Attention
+### MirrorCSPNet
+<img width="996" alt="Screenshot 2024-11-07 at 9 11 58 PM" src="https://github.com/user-attachments/assets/04af00af-ed66-47c9-aec1-34d2a9dc3db6">
 
 This repository contains the implementation of a Faster R-CNN model enhanced with attention mechanisms and additional custom layers like CSPDarkNet, FPN, PAN, SPP, RPN, and custom detection heads to improve object detection performance. This project aims to explore how integrating attention layers and custom feature extraction blocks into a Faster R-CNN architecture can enhance feature representation, resulting in better localization and classification of objects in images.
 
