@@ -67,7 +67,7 @@ class ConvBlockCSP(nn.Module):
      x1 = self.bn(self.conv1(feauture_map))
      x1=self.activation(x1)
 
-     x2 = self.bn(self.conv2(x1))
+     x2 = self.bn2(self.conv2(x1))
      x2=self.activation(x2)
      #in case we change kernel size to !=(1,1), x1 needs to match 2 for summation, Fixed
      if x1.size(2) != x2.size(2) or x1.size(3) != x2.size(3):
