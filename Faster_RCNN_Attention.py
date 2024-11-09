@@ -5,14 +5,6 @@ from torch import Tensor
 import torchvision.transforms as transforms
 import numpy as np
 
-"""
-### Proposal 1: 
-We propose that using avg poolings, permutes, as well as channel manupilation and then summations/concatinations can increase feature size representations while not adding computational expensiveness. This in mind said that the closer we are to the origin of the gradients, the less information we loose due to averaging decay, unless a matching/close dimention shape is added in the inermediate layers, such that the model architectuctres mimicks that of the U-Net Network.
-### Proposal 2:
-We propose that horizentally increasing the feature map dimentions will help and assist in increasing gradient representation via using a siamese network for both parts of CSPNet, which will require less computations while also increasing feature representations. 
-### Proposal 3:
-We Propose that cross section percentage feature map sharing for the CSPNet which will help and asssit in feauter represeantion in maintaining some edge information.
-"""
 
 #NOTE TO SELF: USE SPARSE CONVOLUITONS IN EARLIER LAYERS ?????
 class InputLayer(nn.Module):
@@ -41,6 +33,7 @@ class InputLayer(nn.Module):
        return image
 
 
+
 # Question: Should we sum after applying activations or before ?, then concatinate ?
 # WOuld not change model performances, does not add any feaure map richness/complexity
 class ConvBlockCSP(nn.Module):
@@ -54,7 +47,7 @@ class ConvBlockCSP(nn.Module):
    output:
          original feature map, new feature map
    """
-   def __init__(self, input_channel: int,out_put_channel:int,stride:int=2, kernel_size:tuple=(5,5))->None:
+   def __init__(self, input_channel: int,out_put_channel:int,stride:int=2, kernel_size:tuple=(5,5), verbose:bool=False)->None:
        super(ConvBlockCSP,self).__init__()
        self.conv1= nn.Conv2d(input_channel,out_put_channel,kernel_size=kernel_size,stride=2,padding=1 )
        self.activation = nn.Mish()
@@ -65,6 +58,7 @@ class ConvBlockCSP(nn.Module):
        self.bn = nn.BatchNorm2d(out_put_channel)
 
        self.bn2 = nn.BatchNorm2d(out_put_channel)
+       self.verbose=verbose
 
        #TODO: Add batch normalization
 
@@ -82,7 +76,9 @@ class ConvBlockCSP(nn.Module):
 
 
      x3 = torch.cat([x1,x2+x1],1)
-     print('x3 shape ',x3.shape)
+     
+     if(self.verbose):
+       print('x3 shape ',x3.shape)
      return (feauture_map, x3 )
 
 #Take Part 1 and Part 2, then switch to the other parts, such as part 2, and part 1 for cspNet
@@ -90,56 +86,76 @@ class ConvBlockCSP(nn.Module):
 # Idea: We generate a Parameter generating network to automaically solve for hyper parameters, we use it every 100 epochs as a loss, or maybe the lowest of 10 of all the 100 epochs
 class BaseConvBlockCSP(nn.Module):
   """
-  BaseConvBlockCSP:
+  BaseConvBlockCSP: Will be fixed soon
    input:
+         Feautrue Map: Tensor
 
    output:
+         tuple: (Tensor,Tensor)
   """
-  def __init__(self,input_channel: int,out_put_channel:int,num_blocks:int=3)->None:
+  def __init__(self,input_channel: int,out_put_channel:int,num_blocks:int=3,verbose:bool=False,use_single_layer:bool=True)->None:
 
     super(BaseConvBlockCSP,self).__init__()
+    self.verbose=verbose
+
     self.ConvBlockCSP= ConvBlockCSP(input_channel,out_put_channel) # In=3, out=8
+    ###Left for debugging purposes
     self.ConvBlockCSP2= ConvBlockCSP(out_put_channel*2,out_put_channel*4) #in= 8 out_put_channel*2, out=32
     self.ConvBlockCSP3= ConvBlockCSP(out_put_channel*4,out_put_channel*6)#in 32, out= 48
-
-
     self.channel_adjust = nn.Conv2d(3, out_put_channel*6, kernel_size=1, stride=1)
 
         #TODO, Replace with a forloop initialization
 
     self.blocks = nn.ModuleList()
+    self.use_single_layer=use_single_layer
+    # IF SET TRUE, ERRORS WILL BE THROWN
+    if not self.use_single_layer:
+
+        print('________WARNING_______')
+        print('This version is not stable')
+        print('for handling deeper ConvBlockCSP yet')
+        print('BaseConvBlockCSP is the source of the issue, and will be fixed soon')
+        print('please set use_single_layer to True')
+        print('________WARNING_______')
 
 
-    for i in range(num_blocks):
+        for i in range(num_blocks):
 
-            in_channels = input_channel if i == 0 else out_put_channel * (2 * i)
-            out_channels = out_put_channel * (2 * (i + 1))
+                in_channels = input_channel if i == 0 else out_put_channel * (2 * i)
+                out_channels = out_put_channel * (2 * (i + 1))
 
-
-            self.blocks.append(ConvBlockCSP(in_channels, out_put_channel))
-
+                self.blocks.append(ConvBlockCSP(in_channels, out_put_channel))
 
 
-  def forward(self, base_feature_map:Tensor, use_single_layer:bool=True)->Tensor:
+
+  def forward(self, base_feature_map:Tensor)->tuple:
     x1=self.ConvBlockCSP(base_feature_map)
 
-    if(use_single_layer):
+    if(self.use_single_layer):
+        if(self.verbose):
+          print('x1 part 1',x1[0].shape)
+          print('x1 part 2',x1[1].shape)
+        
 
         return x1
 
     x1_part1,x1_part2=x1
-    print('x1 part 1',x1_part1.shape)
-    print('x1 part 2',x1_part2.shape)
-    x2_part1,x2_part2=self.ConvBlockCSP2(x1_part2)
+    if(self.verbose):
+        print('x1 part 1',x1_part1.shape)
+        print('x1 part 2',x1_part2.shape)
 
-    print('x2 part 1',x2_part1.shape)
-    print('x2 part 2',x2_part2.shape)
+    x2_part1,x2_part2=self.ConvBlockCSP2(x1_part2)
+    if(self.verbose):
+        print('x2 part 1',x2_part1.shape)
+        print('x2 part 2',x2_part2.shape)
 
     x3_part1, x3_part2=self.ConvBlockCSP3(x2_part2)
-    print('x3 part 1',x3_part1.shape)
-    print('x3 part 2',x3_part2.shape)
+    if(self.verbose):
+        print('x3 part 1',x3_part1.shape)
+        print('x3 part 2',x3_part2.shape)
     x1_part1=self.channel_adjust(x1_part1)
-    print('x1_part1 new shape',x1_part1.shape)
+    if(self.verbose):
+        print('x1_part1 new shape',x1_part1.shape)
 
     x1_part1 = nn.functional.adaptive_avg_pool2d(x1_part1, (x3_part2.size(2), x3_part2.size(3)))
 
@@ -147,7 +163,7 @@ class BaseConvBlockCSP(nn.Module):
     return (x3_part1, torch.cat([x1_part1,x3_part2],1))
 
 
-class CSPDarkNet(nn.Module):
+class CSPMirrorNet(nn.Module):
    """
    CSPDarkNet:
     unlike the original CSPNet, where we would only take 1 part to pass through convolutions while
@@ -162,57 +178,71 @@ class CSPDarkNet(nn.Module):
         Feaute Map:Tensor
    """
 
-   def __init__(self,num_of_base_blocks:int,input_shape:Tensor)->None:
-      super(CSPDarkNet,self).__init__()
+   def __init__(self,num_of_base_blocks:int,input_shape:Tensor,verbose:bool=False)->None:
+      super(CSPMirrorNet,self).__init__()
       self.base_blocks = nn.ModuleList()
+      """
+      for futur iterations, we will enable depth manupilation of the Mished Dense Block, but keeping in mind with every base_block we will conduct resnetlike operations and adaptive pooling, per proposal 1
       for i in range(num_of_base_blocks):
         self.base_blocks.append(BaseConvBlockCSP(input_shape,4)) #TODO FIX/CHANGEME
+      """  
       self.base_block = BaseConvBlockCSP(input_shape,4)
+      self.verbose=verbose
 
 
-   def forward(self, feature_map:Tensor)->Tensor: #also can be an image/Feaute map
-      print('before : example size',feature_map.shape )
+   def forward(self, feature_map:Tensor,overlap_percentage:float=0.20)->Tensor: #also can be an image/Feaute map
+      
+      if(self.verbose):
+        print('before : example size',feature_map.shape)
+    
 
       height_split = feature_map.shape[2] // 2
       width_split = feature_map.shape[3] // 2
-      overlap_percentage=0.20 #could be changed
+      overlap_percentage=overlap_percentage #could be changed
 
 
       height_overlap = int(height_split * overlap_percentage)
       width_overlap = int(width_split * overlap_percentage)
 
       # Using a percentage value for might make the model more flexible by allowing us to scale the overlap relative to the size of the feature map., This is just an idea, not referenced anywhere
-      example1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
-      example2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
+      part_1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
+      part_2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
 
         # Process
-      print("after: ",example1.shape)
-      print("after: ",example2.shape)
+      if(self.verbose):  
+        print("after: ",part_1.shape)
+        print("after: ",part_2.shape)
 
 
-      processed_example1 = self.base_block(example1)[1]
-      processed_example2 = self.base_block(example2)[1]
-      print("processed_example1", processed_example1.shape)
+      processed_part1 = self.base_block(part_1)[1]
+      processed_part2 = self.base_block(part_2)[1]
+
+      if(self.verbose):
+        print("processed_part1", processed_part1.shape)
+        print("processed_part2", processed_part2.shape)
+    
 
       # Reusing the same logic we did earlier, we are mimicking a CSPNet Part1, Part2 except that we are adding cross sectioned, think of it like a siamese network
 
-      example2 = nn.functional.adaptive_avg_pool2d(example2, (processed_example1.size(2), processed_example1.size(3)))
-      example1 = nn.functional.adaptive_avg_pool2d(example1, (processed_example1.size(2), processed_example1.size(3)))
+      example2 = nn.functional.adaptive_avg_pool2d(part_2, (processed_part1.size(2), processed_part1.size(3)))
+      example1 = nn.functional.adaptive_avg_pool2d(part_1, (processed_part1.size(2), processed_part1.size(3)))
 
-      concat1 = torch.cat([example2, processed_example1], dim=1)
+      concat1 = torch.cat([example2, processed_part1], dim=1)
 
-      concat2 = torch.cat([example1, processed_example2], dim=1)
+      concat2 = torch.cat([example1, processed_part2], dim=1)
 
       # Sum the concatenated outputs, we can also opt out to concatinate them but this will increase computational cost
       combined_output = concat1 + concat2
-
-      print("Shape of example1 (untouched):", example1.shape)
-      print("Shape of example2 (untouched):", example2.shape)
-      print("Shape of processed_example1:", processed_example1.shape)
-      print("Shape of processed_example2:", processed_example2.shape)
-      print("Shape of concat1:", concat1.shape)
-      print("Shape of concat2:", concat2.shape)
-      print("Combined output shape after summing:", combined_output.shape)
+     
+      if(self.verbose):
+          
+        print("Shape of part1 (untouched):", example1.shape)
+        print("Shape of example2 (untouched):", example2.shape)
+        print("Shape of processed_example1:", processed_part1.shape)
+        print("Shape of processed_example2:", processed_part2.shape)
+        print("Shape of concat1:", concat1.shape)
+        print("Shape of concat2:", concat2.shape)
+        print("Combined output shape after summing:", combined_output.shape)
 
 
       return combined_output
@@ -280,3 +310,5 @@ class RPN(nn.Module):
     super(RPN,self).__init__()
   def forward()->None:
     return None
+
+
