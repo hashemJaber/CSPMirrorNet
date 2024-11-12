@@ -73,10 +73,8 @@ class ConvBlockCSP(nn.Module):
      if x1.size(2) != x2.size(2) or x1.size(3) != x2.size(3):
             x1 = nn.functional.adaptive_avg_pool2d(x1, (x2.size(2), x2.size(3)))
 
-
-
      x3 = torch.cat([x1,x2+x1],1)
-     
+
      if(self.verbose):
        print('x3 shape ',x3.shape)
      return (feauture_map, x3 )
@@ -135,7 +133,7 @@ class BaseConvBlockCSP(nn.Module):
         if(self.verbose):
           print('x1 part 1',x1[0].shape)
           print('x1 part 2',x1[1].shape)
-        
+
 
         return x1
 
@@ -178,38 +176,39 @@ class CSPMirrorNet(nn.Module):
         Feaute Map:Tensor
    """
 
-   def __init__(self,num_of_base_blocks:int,input_shape:Tensor,verbose:bool=False)->None:
+   def __init__(self,num_of_base_blocks:int,input_shape:Tensor,verbose:bool=False,overlap_percentage:float=0.20)->None:
       super(CSPMirrorNet,self).__init__()
       self.base_blocks = nn.ModuleList()
       """
       for futur iterations, we will enable depth manupilation of the Mished Dense Block, but keeping in mind with every base_block we will conduct resnetlike operations and adaptive pooling, per proposal 1
       for i in range(num_of_base_blocks):
         self.base_blocks.append(BaseConvBlockCSP(input_shape,4)) #TODO FIX/CHANGEME
-      """  
+      """
       self.base_block = BaseConvBlockCSP(input_shape,4)
       self.verbose=verbose
+      self.overlap_percentage=overlap_percentage
 
 
    def forward(self, feature_map:Tensor,overlap_percentage:float=0.20)->Tensor: #also can be an image/Feaute map
-      
+
       if(self.verbose):
         print('before : example size',feature_map.shape)
-    
+
 
       height_split = feature_map.shape[2] // 2
       width_split = feature_map.shape[3] // 2
-      overlap_percentage=overlap_percentage #could be changed
+     
 
 
-      height_overlap = int(height_split * overlap_percentage)
-      width_overlap = int(width_split * overlap_percentage)
+      height_overlap = int(height_split * self.overlap_percentage)
+      width_overlap = int(width_split * self.overlap_percentage)
 
       # Using a percentage value for might make the model more flexible by allowing us to scale the overlap relative to the size of the feature map., This is just an idea, not referenced anywhere
       part_1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
       part_2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
 
         # Process
-      if(self.verbose):  
+      if(self.verbose):
         print("after: ",part_1.shape)
         print("after: ",part_2.shape)
 
@@ -220,7 +219,7 @@ class CSPMirrorNet(nn.Module):
       if(self.verbose):
         print("processed_part1", processed_part1.shape)
         print("processed_part2", processed_part2.shape)
-    
+
 
       # Reusing the same logic we did earlier, we are mimicking a CSPNet Part1, Part2 except that we are adding cross sectioned, think of it like a siamese network
 
@@ -233,9 +232,9 @@ class CSPMirrorNet(nn.Module):
 
       # Sum the concatenated outputs, we can also opt out to concatinate them but this will increase computational cost
       combined_output = concat1 + concat2
-     
+
       if(self.verbose):
-          
+
         print("Shape of part1 (untouched):", example1.shape)
         print("Shape of example2 (untouched):", example2.shape)
         print("Shape of processed_example1:", processed_part1.shape)
