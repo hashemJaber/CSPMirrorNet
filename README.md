@@ -1,11 +1,11 @@
 ### MirrorCSPNet
 <img width="996" alt="Screenshot 2024-11-07 at 9 11 58 PM" src="https://github.com/user-attachments/assets/04af00af-ed66-47c9-aec1-34d2a9dc3db6">
 
-This repository contains the implementation of a Faster R-CNN model enhanced with attention mechanisms and additional custom layers like CSPDarkNet, FPN, PAN, SPP, RPN, and custom detection heads to improve object detection performance. This project aims to explore how integrating attention layers and custom feature extraction blocks into a Faster R-CNN architecture can enhance feature representation, resulting in better localization and classification of objects in images.
+This repository aims to introduce a new proposed backbone to which we call CSPMirrorNet, CSPMirrorNet aims to add a Horizontal expansion of feature map dimensions to increase gradient representation, employing a siamese network-like structure, and implementing a concept of early feature map cross sectionality, all the while paying homage to CSPNet.
 
 ### Overview
 
-Faster R-CNN (Region-based Convolutional Neural Network) is a widely-used deep learning model for object detection tasks. It improves on its predecessors by introducing a Region Proposal Network (RPN) to quickly generate high-quality region proposals. By adding attention mechanisms and advanced backbone architectures to this model, we aim to selectively focus on the most informative parts of each feature map, which helps in more accurately distinguishing between foreground and background objects.
+CSPDenseNet is a widely-used deep learning backbone architecture for object detection tasks.  By adding advances such as a Horizontal expansion of feature map dimensions to increase gradient representation, employing a siamese network-like structure, and implementing a concept of early feature map cross sectionality backbone architectures to this model, we aim to increase the feature map representation while still attempting to limit the propogation time and memory consumption, but with a bigger aim of increasing performance.
 
 The repository contains two main components:
 
