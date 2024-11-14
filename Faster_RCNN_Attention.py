@@ -47,9 +47,9 @@ class ConvBlockCSP(nn.Module):
    output:
          original feature map, new feature map
    """
-   def __init__(self, input_channel: int,out_put_channel:int,stride:int=2, kernel_size:tuple=(5,5), verbose:bool=False)->None:
+   def __init__(self, input_channel: int,out_put_channel:int,stride:int=1, kernel_size:tuple=(2,2), verbose:bool=False)->None:
        super(ConvBlockCSP,self).__init__()
-       self.conv1= nn.Conv2d(input_channel,out_put_channel,kernel_size=kernel_size,stride=2,padding=1 )
+       self.conv1= nn.Conv2d(input_channel,out_put_channel,kernel_size=kernel_size,stride=stride,padding=1 )
        self.activation = nn.Mish()
 
        self.conv2= nn.Conv2d(out_put_channel,out_put_channel,kernel_size=kernel_size,stride=1 )
@@ -63,7 +63,7 @@ class ConvBlockCSP(nn.Module):
        #TODO: Add batch normalization
 
 
-   def forward(self, feauture_map) -> (Tensor, Tensor):
+   def forward(self, feauture_map:Tensor) -> (Tensor, Tensor):
      x1 = self.bn(self.conv1(feauture_map))
      x1=self.activation(x1)
 
@@ -91,15 +91,15 @@ class BaseConvBlockCSP(nn.Module):
    output:
          tuple: (Tensor,Tensor)
   """
-  def __init__(self,input_channel: int,out_put_channel:int,num_blocks:int=3,verbose:bool=False,use_single_layer:bool=True)->None:
+  def __init__(self,input_channel: int,out_put_channel:int,num_blocks:int=3,verbose:bool=False,use_single_layer:bool=True,stride:int=1)->None:
 
     super(BaseConvBlockCSP,self).__init__()
     self.verbose=verbose
 
     self.ConvBlockCSP= ConvBlockCSP(input_channel,out_put_channel) # In=3, out=8
     ###Left for debugging purposes
-    self.ConvBlockCSP2= ConvBlockCSP(out_put_channel*2,out_put_channel*4) #in= 8 out_put_channel*2, out=32
-    self.ConvBlockCSP3= ConvBlockCSP(out_put_channel*4,out_put_channel*6)#in 32, out= 48
+    self.ConvBlockCSP2= ConvBlockCSP(out_put_channel*2,out_put_channel*4,stride=stride) #in= 8 out_put_channel*2, out=32
+    self.ConvBlockCSP3= ConvBlockCSP(out_put_channel*4,out_put_channel*6,stride=stride)#in 32, out= 48
     self.channel_adjust = nn.Conv2d(3, out_put_channel*6, kernel_size=1, stride=1)
 
         #TODO, Replace with a forloop initialization
@@ -176,7 +176,7 @@ class CSPMirrorNet(nn.Module):
         Feaute Map:Tensor
    """
 
-   def __init__(self,num_of_base_blocks:int,input_shape:Tensor,verbose:bool=False,overlap_percentage:float=0.20)->None:
+   def __init__(self,num_of_base_blocks:int,input_shape:Tensor,verbose:bool=False,overlap_percentage:float=0.20,stride:int=2)->None:
       super(CSPMirrorNet,self).__init__()
       self.base_blocks = nn.ModuleList()
       """
@@ -184,28 +184,41 @@ class CSPMirrorNet(nn.Module):
       for i in range(num_of_base_blocks):
         self.base_blocks.append(BaseConvBlockCSP(input_shape,4)) #TODO FIX/CHANGEME
       """
-      self.base_block = BaseConvBlockCSP(input_shape,4)
+      self.base_block = BaseConvBlockCSP(input_shape,4,stride=stride)
       self.verbose=verbose
       self.overlap_percentage=overlap_percentage
 
 
-   def forward(self, feature_map:Tensor,overlap_percentage:float=0.20)->Tensor: #also can be an image/Feaute map
+   def forward(self, feature_map:Tensor)->Tensor: #also can be an image/Feaute map
 
       if(self.verbose):
         print('before : example size',feature_map.shape)
 
 
-      height_split = feature_map.shape[2] // 2
-      width_split = feature_map.shape[3] // 2
-     
+      #height_split = feature_map.shape[2] // 2
+      #width_split = feature_map.shape[3] // 2
+      #because when even turns to odd, and then we divide, it goes down by one hence it doesn't effect even numbers, this is to resovle the issue of un even odd/even width's and heights when procceses to part1, part2
+      height= feature_map.shape[2]
+      width= feature_map.shape[3]
+      height_split = (height + 1) // 2
+      width_split = (width + 1) // 2
+      if(self.verbose):
+        print('height_split',height_split)
+        print('width_split',width_split)
 
 
       height_overlap = int(height_split * self.overlap_percentage)
       width_overlap = int(width_split * self.overlap_percentage)
 
+      if(self.verbose):
+        print('height_overlap',height_overlap)
+        print('width_overlap',width_overlap)
+
       # Using a percentage value for might make the model more flexible by allowing us to scale the overlap relative to the size of the feature map., This is just an idea, not referenced anywhere
       part_1 = feature_map[:, :, :height_split + height_overlap, :width_split + width_overlap]
-      part_2 = feature_map[:, :, height_split - height_overlap:, width_split - width_overlap:]
+      part_2 = feature_map[:, :, height - (height_split + height_overlap):, width - (width_split + width_overlap):]
+
+
 
         # Process
       if(self.verbose):
@@ -223,7 +236,7 @@ class CSPMirrorNet(nn.Module):
 
       # Reusing the same logic we did earlier, we are mimicking a CSPNet Part1, Part2 except that we are adding cross sectioned, think of it like a siamese network
 
-      example2 = nn.functional.adaptive_avg_pool2d(part_2, (processed_part1.size(2), processed_part1.size(3)))
+      example2 = nn.functional.adaptive_avg_pool2d(part_2, (processed_part2.size(2), processed_part2.size(3)))
       example1 = nn.functional.adaptive_avg_pool2d(part_1, (processed_part1.size(2), processed_part1.size(3)))
 
       concat1 = torch.cat([example2, processed_part1], dim=1)
@@ -311,3 +324,175 @@ class RPN(nn.Module):
     return None
 
 
+class ConvBNLeakyReLU(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.leaky_relu = nn.LeakyReLU(0.1)
+
+    def forward(self, x):
+        return self.leaky_relu(self.bn(self.conv(x)))
+
+class BottleneckBlock(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, shortcut=True):
+        super().__init__()
+        self.conv1 = ConvBNLeakyReLU(in_channels, hidden_channels, kernel_size=1, stride=1, padding=0)
+        self.conv2 = ConvBNLeakyReLU(hidden_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.shortcut = shortcut
+
+    def forward(self, x):
+        if self.shortcut:
+            return x + self.conv2(self.conv1(x))
+        else:
+            return self.conv2(self.conv1(x))
+
+class CSPBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, num_bottlenecks, fusion_type="last", partial_transition=True):
+        """
+        CSPBlock with configurable fusion and partial transition.
+        """
+        super().__init__()
+        hidden_channels = out_channels // 2
+        self.fusion_type = fusion_type
+        self.partial_transition = partial_transition
+
+        # Two main convolution paths
+        self.conv1 = ConvBNLeakyReLU(in_channels, hidden_channels, kernel_size=1, stride=1, padding=0)
+        self.conv2 = ConvBNLeakyReLU(in_channels, hidden_channels, kernel_size=1, stride=1, padding=0)
+
+        # Bottleneck sequence
+        self.bottlenecks = nn.Sequential(
+            *[BottleneckBlock(hidden_channels, hidden_channels, hidden_channels) for _ in range(num_bottlenecks)]
+        )
+
+
+        self.conv3 = ConvBNLeakyReLU(hidden_channels * 2, out_channels, kernel_size=1, stride=1, padding=0)
+
+    def forward(self, x):
+
+        x1 = self.conv1(x)
+        x2 = self.conv2(x)
+
+        if self.partial_transition:
+        
+            if self.fusion_type == "first":
+        
+                x_fused = torch.cat([x1, x2], dim=1)
+                x1 = self.bottlenecks(x_fused)
+            else:
+  
+                x1 = self.bottlenecks(x1)
+                x_fused = torch.cat([x1, x2], dim=1)
+        else:
+            if self.fusion_type == "first":
+                x_fused = torch.cat([x1, x2], dim=1)
+                x_fused = self.bottlenecks(x_fused)
+            else:
+                x1 = self.bottlenecks(x1)
+                x_fused = torch.cat([x1, x2], dim=1)
+
+        return self.conv3(x_fused)
+
+
+
+class CSPMirrorNet53(nn.Module):
+    def __init__(self, num_classes:int=1000, input_shape:int=3, verbose:bool=False, gamma:float=1.0, fusion_type:str="last", partial_transition:bool=True)->None:
+        """
+        CSPMirrorNet53 with options for fusion type and channel density adjustment.
+        
+        Args:
+            num_classes (int): Number of classes for the final classification.
+            input_shape (int): Number of input channels (e.g., 3 for RGB).
+            verbose (bool): Print the shape of each layer if True.
+            gamma (float): Channel reduction factor to adjust model size (0 < γ ≤ 1).
+            fusion_type (str): Type of fusion ('first' or 'last') within CSP blocks.
+            partial_transition (bool): If True, enables partial transition in CSP blocks.
+        """
+        super().__init__()
+        self.verbose = verbose
+        self.gamma = gamma
+        self.fusion_type = fusion_type
+        self.partial_transition = partial_transition
+        
+       
+        adjusted_channels = int(64 * gamma)  # Adjust channels by gamma
+        self.stem = ConvBNLeakyReLU(input_shape, adjusted_channels, kernel_size=3, stride=1, padding=4)
+        
+        # Stage 1
+        stage1_in = adjusted_channels
+        stage1_out = int(128 * gamma)
+        self.stage1 = nn.Sequential(
+            ConvBNLeakyReLU(stage1_in, stage1_out, kernel_size=3, stride=2, padding=3),
+            CSPMirrorNet(num_of_base_blocks=1, input_shape=stage1_out, verbose=self.verbose)
+        )
+        
+        # Stage 2
+        stage2_in = stage1_out + 8  # Adjusted for CSP output concatenation
+        stage2_out = int(256 * gamma)
+        self.stage2 = nn.Sequential(
+            ConvBNLeakyReLU(stage2_in, stage2_out, kernel_size=3, stride=2, padding=1),
+            CSPMirrorNet(num_of_base_blocks=2, input_shape=stage2_out, verbose=self.verbose)
+        )
+        
+        # Stage 3
+        stage3_in = stage2_out + 8
+        stage3_out = int(512 * gamma)
+        self.stage3 = nn.Sequential(
+            ConvBNLeakyReLU(stage3_in, stage3_out, kernel_size=3, stride=2, padding=1),
+            CSPBlock(stage3_out, stage3_out, num_bottlenecks=8, fusion_type=self.fusion_type, partial_transition=self.partial_transition)
+        )
+        
+        # Stage 4
+        stage4_in = stage3_out
+        stage4_out = int(1024 * gamma)
+        self.stage4 = nn.Sequential(
+            ConvBNLeakyReLU(stage4_in, stage4_out, kernel_size=3, stride=2, padding=2),
+            CSPMirrorNet(num_of_base_blocks=8, input_shape=stage4_out, verbose=self.verbose)
+        )
+        
+        # Stage 5
+        stage5_in = stage4_out + 8
+        stage5_out = int(2048 * gamma)
+        self.stage5 = nn.Sequential(
+            ConvBNLeakyReLU(stage5_in, stage5_out, kernel_size=3, stride=1, padding=2),
+            CSPMirrorNet(num_of_base_blocks=4, input_shape=stage5_out, verbose=self.verbose)
+        )
+        
+        final_channels = stage5_out + 8  # Final output channels after CSPMirrorNet concatenation
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(final_channels, num_classes)
+
+    def forward(self, x:Tensor)->Tensor:
+        if self.verbose:
+            print("Initial input:", x.shape)
+            
+        x = self.stem(x)
+        if self.verbose:
+            print("After stem:", x.shape)
+
+        x = self.stage1(x)
+        if self.verbose:
+            print("After stage1:", x.shape)
+
+        x = self.stage2(x)
+        if self.verbose:
+            print("After stage2:", x.shape)
+
+        x = self.stage3(x)
+        if self.verbose:
+            print("After stage3:", x.shape)
+
+        x = self.stage4(x)
+        if self.verbose:
+            print("After stage4:", x.shape)
+
+        x = self.stage5(x)
+        if self.verbose:
+            print("After stage5:", x.shape)
+
+        x = self.pool(x).view(x.size(0), -1)
+        if self.verbose:
+            print("After pooling:", x.shape)
+
+        return self.fc(x)

@@ -97,7 +97,8 @@ Faster_RCNN_Attention.py: The main script containing the model definition, inclu
 
 requirements.txt: Lists the dependencies required to run the project.
 
-Results
+## Results
+
 
 The attention-enhanced Faster R-CNN, combined with CSPDarkNet, FPN, and PAN, is expected to produce higher precision and recall compared to a standard Faster R-CNN model by focusing on the most relevant parts of the image during training and inference. Additionally, the integration of the Path Aggregation Network (PAN) helps to improve spatial information flow, further boosting model performance.
 
