@@ -98,7 +98,25 @@ Faster_RCNN_Attention.py: The main script containing the model definition, inclu
 requirements.txt: Lists the dependencies required to run the project.
 
 ## Results
+# CIFAR-10
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2db8308d-9735-431b-b3ad-057027e49fa2" alt="Training and Validation Accuracy" width="45%">
+  <img src="https://github.com/user-attachments/assets/94d17826-0a82-4562-8aec-fefe2e61111f" alt="Training and Validation Loss" width="45%">
+</p>
 
+
+### Model and Configuration Details
+- **Model**: CSPMirrorNet53
+- **Training Device**: NVIDIA A100 GPU
+- **Dataset**: CIFAR-10 (No Data Augmentation or dropout)
+- **Training Configuration**:
+  - **Learning Rate**: Standard
+  - **Batch Size**: 128
+  - **Optimizer**: SGD @lr=0.1, @momentum=0.9, @weight_decay=5e-4
+  - **scheduler**: @step_size=25, @gamma=0.5
+  - **Number of Epochs**: 100
+  - **Gamma**: Set to 0.8
+ 
 
 The attention-enhanced Faster R-CNN, combined with CSPDarkNet, FPN, and PAN, is expected to produce higher precision and recall compared to a standard Faster R-CNN model by focusing on the most relevant parts of the image during training and inference. Additionally, the integration of the Path Aggregation Network (PAN) helps to improve spatial information flow, further boosting model performance.
 
