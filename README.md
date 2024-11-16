@@ -1,6 +1,7 @@
-### MirrorCSPNet
-<img width="996" alt="Screenshot 2024-11-07 at 9 11 58 PM" src="https://github.com/user-attachments/assets/04af00af-ed66-47c9-aec1-34d2a9dc3db6">
-
+### CSPMirrorNet
+<p width="20%" align="center">
+<img width="996" alt="Screenshot 2024-11-07 at 9 11 58 PM" src="https://github.com/user-attachments/assets/04af00af-ed66-47c9-aec1-34d2a9dc3db6" width="20%" align="center">
+</p>
 This repository aims to introduce a new proposed backbone to which we call CSPMirrorNet, CSPMirrorNet aims to add a Horizontal expansion of feature map dimensions to increase gradient representation, employing a siamese network-like structure, and implementing a concept of early feature map cross sectionality, all the while paying homage to CSPNet.
 
 ### Overview
