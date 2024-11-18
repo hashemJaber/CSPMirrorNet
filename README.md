@@ -119,14 +119,12 @@ requirements.txt: Lists the dependencies required to run the project.
   - **Gamma**: Set to 0.8
  
 
-The attention-enhanced Faster R-CNN, combined with CSPDarkNet, FPN, and PAN, is expected to produce higher precision and recall compared to a standard Faster R-CNN model by focusing on the most relevant parts of the image during training and inference. Additionally, the integration of the Path Aggregation Network (PAN) helps to improve spatial information flow, further boosting model performance.
-
 You can find sample output images and detailed training metrics in the Jupyter Notebook.
 
 ### Acknowledgements
 
 This implementation builds upon the original Faster R-CNN architecture introduced by Shaoqing Ren, Kaiming He, Ross B. Girshick, and Jian Sun. 
-Special thanks will be added once I have finalized this project.
+Special thanks will be added once I have finalized this project/research.
 
 ## Contributing
 
