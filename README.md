@@ -98,7 +98,91 @@ Faster_RCNN_Attention.py: The main script containing the model definition, inclu
 
 requirements.txt: Lists the dependencies required to run the project.
 
+> [!CAUTION]
+>  Running/Training the model on MS-COCO 2017 via GPU will cause errors hence for now RUN ON CPU.
+
 ## Results
+# MS-COCO 2017
+
+| Metric                      | IoU       | Area    | Max Dets | Value  |
+|-----------------------------|-----------|---------|----------|--------|
+| Average Precision (AP)      | 0.50:0.95 | all     | 100      | 0.000  |
+| Average Precision (AP)      | 0.50      | all     | 100      | 0.000  |
+| Average Precision (AP)      | 0.75      | all     | 100      | 0.000  |
+| Average Precision (AP)      | 0.50:0.95 | small   | 100      | 0.000  |
+| Average Precision (AP)      | 0.50:0.95 | medium  | 100      | 0.000  |
+| Average Precision (AP)      | 0.50:0.95 | large   | 100      | 0.000  |
+| Average Recall (AR)         | 0.50:0.95 | all     | 1        | 0.000  |
+| Average Recall (AR)         | 0.50:0.95 | all     | 10       | 0.000  |
+| Average Recall (AR)         | 0.50:0.95 | all     | 100      | 0.001  |
+| Average Recall (AR)         | 0.50:0.95 | small   | 100      | 0.000  |
+| Average Recall (AR)         | 0.50:0.95 | medium  | 100      | 0.001  |
+| Average Recall (AR)         | 0.50:0.95 | large   | 100      | 0.002  |
+### Detection Results
+
+| Class              | Images | Instances | Box(P)  | R       | mAP50  | mAP50-95 |
+|--------------------|--------|-----------|---------|---------|--------|----------|
+| all                | 5000   | 36335     | 0.000117 | 0.00484 | 9.32e-05 | 2.29e-05 |
+| person             | 2693   | 10777     | 0.0016   | 0.215   | 0.0023   | 0.000565 |
+| bicycle            | 149    | 314       | 0        | 0       | 0        | 0        |
+| car                | 535    | 1918      | 0        | 0       | 0        | 0        |
+| motorcycle         | 159    | 367       | 0        | 0       | 0        | 0        |
+| airplane           | 97     | 143       | 0        | 0       | 0        | 0        |
+| bus                | 189    | 283       | 0        | 0       | 0        | 0        |
+| train              | 157    | 190       | 0        | 0       | 0        | 0        |
+| truck              | 250    | 414       | 0        | 0       | 0        | 0        |
+| boat               | 121    | 424       | 0        | 0       | 0        | 0        |
+| traffic light      | 191    | 634       | 0        | 0       | 0        | 0        |
+| fire hydrant       | 86     | 101       | 0        | 0       | 0        | 0        |
+| stop sign          | 69     | 75        | 0        | 0       | 0        | 0        |
+| parking meter      | 37     | 60        | 0        | 0       | 0        | 0        |
+| bench              | 235    | 411       | 0        | 0       | 0        | 0        |
+| bird               | 125    | 427       | 0        | 0       | 0        | 0        |
+| cat                | 184    | 202       | 0        | 0       | 0        | 0        |
+| dog                | 177    | 218       | 0        | 0       | 0        | 0        |
+| horse              | 128    | 272       | 0        | 0       | 0        | 0        |
+| sheep              | 65     | 354       | 0        | 0       | 0        | 0        |
+| cow                | 87     | 372       | 0        | 0       | 0        | 0        |
+| elephant           | 89     | 252       | 0        | 0       | 0        | 0        |
+| bear               | 49     | 71        | 0        | 0       | 0        | 0        |
+| zebra              | 85     | 266       | 0        | 0       | 0        | 0        |
+| giraffe            | 101    | 232       | 0        | 0       | 0        | 0        |
+| backpack           | 228    | 371       | 0        | 0       | 0        | 0        |
+| umbrella           | 174    | 407       | 0        | 0       | 0        | 0        |
+| handbag            | 292    | 540       | 0        | 0       | 0        | 0        |
+| tie                | 145    | 252       | 0        | 0       | 0        | 0        |
+| suitcase           | 105    | 299       | 0        | 0       | 0        | 0        |
+| frisbee            | 84     | 115       | 0        | 0       | 0        | 0        |
+| skis               | 120    | 241       | 0        | 0       | 0        | 0        |
+| snowboard          | 49     | 69        | 0        | 0       | 0        | 0        |
+| sports ball        | 169    | 260       | 0        | 0       | 0        | 0        |
+| kite               | 91     | 327       | 0        | 0       | 0        | 0        |
+| baseball bat       | 97     | 145       | 0        | 0       | 0        | 0        |
+| baseball glove     | 100    | 148       | 0        | 0       | 0        | 0        |
+| skateboard         | 127    | 179       | 0        | 0       | 0        | 0        |
+| surfboard          | 149    | 267       | 0        | 0       | 0        | 0        |
+| tennis racket      | 167    | 225       | 0        | 0       | 0        | 0        |
+| bottle             | 379    | 1013      | 0        | 0       | 0        | 0        |
+| wine glass         | 110    | 341       | 0        | 0       | 0        | 0        |
+| cup                | 390    | 895       | 0        | 0       | 0        | 0        |
+| fork               | 155    | 215       | 0        | 0       | 0        | 0        |
+| knife              | 181    | 325       | 0        | 0       | 0        | 0        |
+| spoon              | 153    | 253       | 0        | 0       | 0        | 0        |
+| bowl               | 314    | 623       | 0.00268  | 0.00803 | 0.0014   | 0.000339 |
+| banana             | 103    | 370       | 0        | 0       | 0        | 0        |
+| apple              | 76     | 236       | 0        | 0       | 0        | 0        |
+| ...                | ...    | ...       | ...      | ...     | ...      | ...      |
+
+### Model and Configuration Details
+* Model: simplified Yolov8n with C2f replaced with CSPMirrorNet
+* Training Device: CPU 
+* Dataset: MS-COCO (No Data Augmentation or dropout)
+* Training Configuration:
+    * Learning Rate: Standard
+    * Batch Size: 16
+    * Optimizer: ADAM
+    * Number of Epochs: 0, took 15 hours of CPU time to complete 30% of an epoch
+
 # CIFAR-10
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2db8308d-9735-431b-b3ad-057027e49fa2" alt="Training and Validation Accuracy" width="45%">
