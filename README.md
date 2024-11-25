@@ -206,9 +206,12 @@ requirements.txt: Lists the dependencies required to run the project.
 You can find sample output images and detailed training metrics in the Jupyter Notebook.
 
 ### Acknowledgements
-
-This implementation builds upon the original Faster R-CNN architecture introduced by Shaoqing Ren, Kaiming He, Ross B. Girshick, and Jian Sun. 
-Special thanks will be added once I have finalized this project/research.
+The author would like to sincerely thank Jay Shon, Cody
+Ourique, Dr. Jun Liu, and Dr. Kaikai Liu for their invaluable
+support, insightful discussions, and the generous time they
+spent listening and engaging with the ideas presented in
+this work. Their guidance and encouragement have greatly
+contributed to the development and refinement of this research.
 
 ## Contributing
 
